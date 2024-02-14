@@ -8,13 +8,13 @@ double dabs(double a) {
     return (a >= 0) ? a : -a;
 }
 
-int dcomp(const void *a, const void *b) {
-    if (*(double*)a == *(double*)b) return 0;
+int dcomp(const void *a, const void *b) { // comparison func for qsort in array generation
+    if (dabs(*(double*)a) == dabs(*(double*)b)) return 0;
 
-    return (*(double*)a > *(double*)b) ? 1 : -1;
+    return (dabs(*(double*)a) > dabs(*(double*)b)) ? 1 : -1;
 }
 
-void reverse(double *arr, int n) {
+void reverse(double *arr, int n) {      //function to reverse arrays
     for (int i = 0; i < n / 2; i++) {
         double temp = arr[i];
         arr[i] = arr[n - 1 - i];
@@ -25,11 +25,11 @@ void reverse(double *arr, int n) {
 double *arrgen(int type, int n) {
     double *arr = malloc(sizeof(double) * n);
 
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) { // generates random doubles from -100000000 to 100000000
         arr[i] = ((double)rand() / (double)RAND_MAX) * 200000000 - 100000000;
     }
 
-    switch (type) {         // 3 types of generation: 0 - random, 1 - ascending, -1 - descending order
+    switch (type) {         // 3 types of generation: 1 - ascending, -1 - descending order and random by default
     case 1:                 // ascending order generation
         qsort(arr, n, sizeof(double), dcomp);
         break;
@@ -48,8 +48,9 @@ void shell_sort(double *arr, int n) {
     int comp_count = 0;
     int swap_count = 0;
 
-    for (int gap = n / 2; gap > 0; gap /= 2) {
+    for (int gap = n / 2; gap > 0; gap /= 2) { // I used one of the most common ways to get gap length for shell sort
 
+        // do insertion sort but with step equal to 'gap' instead of 1
         for (int i = 0; i < n; i++) {
             double key = arr[i];
             int j = i - gap;
@@ -80,8 +81,8 @@ void swap(double *a, double *b) {
 }
 
 void heapify(int i, double *arr, int n, int *swap_count, int *comp_count) {
-    int root = i;
-    int l = 2 * i + 1;
+    int root = i;               // get the root and its 2 children
+    int l = 2 * i + 1;          // and swap the root with a child if it's bigger
     int r = 2 * i + 2;
 
     if (l < n && ((*comp_count)++, dabs(arr[l]) > dabs(arr[root]))) {
@@ -105,13 +106,13 @@ void pyramid_sort(double *arr, int n) {
     int comp_count = 0;
     int swap_count = 0;
 
-    for (int i = n / 2 - 1; i >= 0 ; i--) {
+    for (int i = n / 2 - 1; i >= 0 ; i--) { // turn the input into a pyramid array
         heapify(i, arr, n, &swap_count, &comp_count);
     }
 
-    for (int i = n - 1; i >= 0; i--) {
-        swap(arr, arr + i);
-        swap_count++;
+    for (int i = n - 1; i >= 0; i--) { // get the root element, which is the biggest,
+        swap(arr, arr + i);            // and put it after the whole pyramid and do this
+        swap_count++;                  // till the pyramid is of length 0
 
         heapify(0, arr, i, &swap_count, &comp_count);
     }
@@ -121,67 +122,68 @@ void pyramid_sort(double *arr, int n) {
     printf("\tAmount of comparisons:\t%d\n\n", comp_count);
 }
 
+void print_arr(double *arr, int n) {
+    for (int i = 0; i < n; i++) {
+        printf("%d : %lf\n", i+1, arr[i]);
+    }
+    printf("\n");
+}
+
+void show_results(int n, int type, char *message) {
+    double *arr1 = arrgen(type, n);
+    double *arr2 = malloc(n * sizeof(double));
+
+    printf("%s \n", message);
+
+    printf("Original array:\n");
+    print_arr(arr1, 10);
+
+    memcpy(arr2, arr1, n * sizeof(double));
+
+    shell_sort(arr1, n);
+
+    printf("Shell sort array:\n");
+    print_arr(arr1, 10);
+
+    pyramid_sort(arr2, n);
+
+    printf("Pyramid sort array:\n");
+    print_arr(arr2, 10);
+
+    free(arr1);
+    free(arr2);
+}
+
 int main()
 {
     unsigned int seed = time(NULL);
     printf("Seed : %d\n\n", seed);
     srand(seed);
 
-    for (int n = 10; n <= 10000; n *= 10) {
+    for (int n = 10; n <= 10000; n *= 10) { // creates arrays with lengths of increasing magnitude
 
         printf("N = %d\n\n", n);
 
-        printf("1) (best case)\n");
+        // creates an array and copies it
+        // to be sorted by 2 different sorting algorithms
 
-        double *arr1 = arrgen(1, n);
-        double *arr2 = malloc(n * sizeof(double));
+        // Best case array is in the order we need
 
-        memcpy(arr2, arr1, n * sizeof(double));
+        show_results(n, 1, "1) (best case)");
 
-        shell_sort(arr1, n);
-        pyramid_sort(arr2, n);
+        // Worst case array is an array in the order that is reverse to the needed
 
-        free(arr1);
-        free(arr2);
+        show_results(n, -1, "2) (worst case)");
 
-        printf("2) (worst case)\n");
+        // Random array ¹1
 
-        arr1 = arrgen(-1, n);
-        arr2 = malloc(n * sizeof(double));
+        show_results(n, 0, "3)");
 
-        memcpy(arr2, arr1, n * sizeof(double));
+        // Random array ¹2
 
-        shell_sort(arr1, n);
-        pyramid_sort(arr2, n);
+        show_results(n, 0, "4)");
 
-        free(arr1);
-        free(arr2);
 
-        printf("3)\n");
-
-        arr1 = arrgen(0, n);
-        arr2 = malloc(n * sizeof(double));
-
-        memcpy(arr2, arr1, n * sizeof(double));
-
-        shell_sort(arr1, n);
-        pyramid_sort(arr2, n);
-
-        free(arr1);
-        free(arr2);
-
-        printf("4)\n");
-
-        arr1 = arrgen(0, n);
-        arr2 = malloc(n * sizeof(double));
-
-        memcpy(arr2, arr1, n * sizeof(double));
-
-        shell_sort(arr1, n);
-        pyramid_sort(arr2, n);
-
-        free(arr1);
-        free(arr2);
     }
 
     return 0;
